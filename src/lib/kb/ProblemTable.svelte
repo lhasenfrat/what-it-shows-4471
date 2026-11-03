@@ -5,8 +5,12 @@
   import { tenantOf } from '#lib/kb/locales';
   import type { Report } from '#lib/kb/causes';
 
-  // issues: problem → URL of the ticket filed for it.
-  let { ticket, issues = {} }: { ticket: number; issues?: Partial<Record<Problem, string>> } = $props();
+  // issues: problem → URL of the ticket filed for it. status: problem → where that ticket stands, in words.
+  let {
+    ticket,
+    issues = {},
+    status = {},
+  }: { ticket: number; issues?: Partial<Record<Problem, string>>; status?: Partial<Record<Problem, string>> } = $props();
 
   const split = $derived(splitTicket(reports as Report[], ticket, tenantOf, notes.oneDayMove));
   const list = (n: Record<string, number>) =>
@@ -26,7 +30,7 @@
 
 <table>
   <thead>
-    <tr><th>problem</th><th>reports</th><th>came in by</th><th>tagged as</th><th>tenants</th><th>seen</th><th>ticket</th></tr>
+    <tr><th>problem</th><th>reports</th><th>came in by</th><th>tagged as</th><th>tenants</th><th>seen</th><th>ticket</th><th>status</th></tr>
   </thead>
   <tbody>
     {#each split.groups as g (g.problem)}
@@ -40,6 +44,7 @@
         <td>
           {#if issues[g.problem]}<a href={issues[g.problem]}>{short(issues[g.problem] ?? '')}</a>{:else}<span class="none">no ticket yet</span>{/if}
         </td>
+        <td class:none={status[g.problem] === 'open'}>{status[g.problem] ?? '—'}</td>
       </tr>
     {/each}
   </tbody>
