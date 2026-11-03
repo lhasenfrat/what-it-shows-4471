@@ -1,0 +1,72 @@
+---
+layout: runbook
+title: '#4471 · three problems, not one'
+owner: lhasenfrat
+status: open
+reviewed: 2026-11-03
+signature: lhasenfrat
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+
+  const repo = 'https://github.com/lhasenfrat/what-it-shows-4471';
+  const issues = {
+    parser: `${repo}/issues/1`,
+    hint: `${repo}/issues/2`,
+    'one-day': `${repo}/issues/3`,
+  };
+</script>
+
+[#4471](/kb/incidents/4471) is marked known: one issue, one fix queued. Its reports say otherwise.
+Read by tenant, by channel and by what each report describes, the ticket holds three problems.
+Each needs its own fix, so each now has its own ticket.
+
+<Callout kind="warn">
+The queued parser fix closes one of the three. The other two stay broken after it ships, so
+#4471 is not done when the fix lands.
+</Callout>
+
+## What #4471 holds
+
+<ProblemTable ticket={4471} {issues} />
+
+## The three problems
+
+**`parser`: the shared parser reads dates month first.** Every tenant on file writes the day
+first, so a booking for 7 April goes out for 4 July. This is the bug #4471 was opened for. Fix:
+read dates in the tenant's own order, which `dayFirst()` in `causes.ts` already asks of the
+platform.
+
+**`hint`: booking-v3 tells people to type the month first.** Under its date field, booking-v3
+prints `MM/DD/YYYY`; booking-v2 prints `DD/MM/YYYY`. On a day-first tenant, people type what the
+hint says and the form reads it the tenant's way, so the date flips just like a parser report.
+It only happens through the `form` channel of booking-v3 tenants. The parser fix does not touch
+it. Fix: print the tenant's order under the field, as booking-v2 does.
+
+**`one-day`: the date moves by one day.** These reports describe a booking that lands a day
+off, not a day and month swapped: "Client in Lisbon got Tuesday. Client in Toronto got Monday."
+The desk already read them this way (`desk-notes.json`), but `CauseTable` files them under
+`parser` because of their tenant. A parser that reads month first cannot move a date by one day,
+so neither fix above touches them. It looks like a time-zone conversion; that needs checking.
+
+## Why one ticket hid three
+
+- The desk merges on subject line alone ([decision 0001](/kb/decisions/0001-dedupe-by-subject)).
+  All three problems come in under the same subjects ("Date is wrong", "Wrong day on the invite"),
+  so they all merged into #4471.
+- Intake's tag is a guess from the reporter's browser, not from the tenant. The "tagged as"
+  column shows how often it disagrees with the problem.
+- The ticket export comes in pages that overlap, so some reports appear twice. Count by id, once.
+
+## For the desk
+
+- Keep #4471 open until all three tickets are closed, and re-read this table when a fix ships:
+  it is built from the export, so it shows what is left.
+- A report about a wrong date is not a duplicate just because its subject matches. Check the
+  tenant, the channel and what moved (a day and month swapped, or one day) before you merge.
+- Decision 0001 still says to merge on subject alone. A new decision record should replace it.
+
+<RenderStamp {signature} />
